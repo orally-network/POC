@@ -1,0 +1,28 @@
+{
+  "canisters": {
+    "poc_backend": {
+      "main": "src/poc_backend/main.mo",
+      "type": "motoko"
+    },
+    "poc_frontend": {
+      "dependencies": [
+        "poc_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/poc_frontend/src/index.html"
+      },
+      "source": [
+        "src/poc_frontend/assets",
+        "dist/poc_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "version": 1
+}
