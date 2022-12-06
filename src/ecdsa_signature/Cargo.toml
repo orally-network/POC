@@ -1,0 +1,15 @@
+[package]
+name = "ecdsa_signature"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+candid = "0.7.14"
+ic-cdk = "0.5.2"
+ic-cdk-macros = "0.5.2"
+serde = "1"
+#ic-evm-sign = "0.0.3"
+ethereum-rlp = "0.2.3"
+easy-hasher = "2.2.1"
+libsecp256k1 = "0.6.0"
+futures = "0.3.25"

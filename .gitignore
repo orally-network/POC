@@ -16,3 +16,8 @@ src/declarations/
 # frontend code
 node_modules/
 dist/
+
+
+# Added by cargo
+
+/target

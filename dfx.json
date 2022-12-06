@@ -1,12 +1,23 @@
 {
   "canisters": {
-    "poc_backend": {
-      "main": "src/poc_backend/main.mo",
-      "type": "motoko"
+    "oracle": {
+      "candid": "src/oracle/oracle.did",
+      "package": "oracle",
+      "type": "rust"
+    },
+    "http_gateway": {
+      "candid": "src/http_gateway/http_gateway.did",
+      "package": "http_gateway",
+      "type": "rust"
+    },
+    "ecdsa_signature": {
+      "candid": "src/ecdsa_signature/ecdsa_signature.did",
+      "package": "ecdsa_signature",
+      "type": "rust"
     },
     "poc_frontend": {
       "dependencies": [
-        "poc_backend"
+        "oracle"
       ],
       "frontend": {
         "entrypoint": "src/poc_frontend/src/index.html"

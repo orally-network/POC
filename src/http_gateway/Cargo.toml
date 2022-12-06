@@ -1,0 +1,9 @@
+[package]
+name = "http_gateway"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+candid = "0.7.14"
+ic-cdk = "0.5.2"
+ic-cdk-macros = "0.5.2"

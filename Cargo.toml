@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "src/ecdsa_signature",
+    "src/http_gateway",
+    "src/oracle",
+]
