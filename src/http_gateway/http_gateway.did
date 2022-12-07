@@ -1,0 +1,3 @@
+service : {
+    fetch_price: () -> (variant { Ok: text; Err: text })
+}

@@ -1,0 +1,18 @@
+{
+  "oracle": {
+    "ic": "7ccqq-zqaaa-aaaag-qaoia-cai",
+    "local": "r7inp-6aaaa-aaaaa-aaabq-cai"
+  },
+  "http_gateway": {
+    "ic": "5iiwd-uiaaa-aaaag-qaoiq-cai",
+    "local": "ryjl3-tyaaa-aaaaa-aaaba-cai"
+  },
+  "ecdsa_signature": {
+    "ic": "2qqtd-riaaa-aaaag-qaogq-cai",
+    "local": "rrkah-fqaaa-aaaaa-aaaaq-cai"
+  },
+  "poc_frontend": {
+    "ic": "1ba5l-caaaa-aaaag-qaoja-cai",
+    "local": "qhbym-qaaaa-aaaaa-aaafq-cai"
+  }
+}

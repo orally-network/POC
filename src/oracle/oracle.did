@@ -1,0 +1,3 @@
+service : {
+    make_magic: () -> ();
+}

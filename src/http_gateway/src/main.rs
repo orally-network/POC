@@ -1,38 +1,12 @@
 use candid::{CandidType, Principal};
 use ic_cdk_macros::{self, query, update};
+use ic_cdk::api::management_canister::http_request::{
+    http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, TransformArgs,
+    TransformContext,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{self, Value};
 use ic_cdk::api::call::RejectionCode;
-
-#[derive(CandidType, Clone, Deserialize, Debug, Eq, Hash, PartialEq, Serialize)]
-pub struct HttpHeader {
-    pub name: String,
-    pub value: String,
-}
-
-#[derive(Clone, Debug, PartialEq, CandidType, Eq, Hash, Serialize, Deserialize)]
-pub enum HttpMethod {
-    GET,
-    POST,
-    HEAD,
-}
-
-#[derive(CandidType, Deserialize, Debug)]
-pub struct CanisterHttpRequestArgs {
-    pub url: String,
-    pub max_response_bytes: Option<u64>,
-    pub headers: Vec<HttpHeader>,
-    pub body: Option<Vec<u8>>,
-    pub http_method: HttpMethod,
-    pub transform_method_name: Option<String>,
-}
-
-#[derive(CandidType, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct CanisterHttpResponsePayload {
-    pub status: u64,
-    pub headers: Vec<HttpHeader>,
-    pub body: Vec<u8>,
-}
 
 pub const DATA_POINTS_PER_API: u64 = 200;
 
@@ -42,127 +16,147 @@ pub const MAX_RESPONSE_BYTES: u64 = 10 * 6 * DATA_POINTS_PER_API;
 // - send request function
 // - transform function
 
-#[query]
-async fn transform(raw: CanisterHttpResponsePayload) -> CanisterHttpResponsePayload {
-    let mut sanitized = raw.clone();
-    sanitized.headers = vec![];
-    sanitized
-}
+async fn send_request(host: String, url: String, method: HttpMethod, body: Option<Vec<u8>>) -> Result<String, (RejectionCode, String)> {
+    let mut host_header = host.clone().to_owned();
+    host_header.push_str(":443");
 
-async fn send_request(url: String, http_method: HttpMethod, headers: Vec<HttpHeader>, body: Option<Vec<u8>>) -> Result<Vec<u8>, (RejectionCode, String)> {
-    let request = CanisterHttpRequestArgs {
+    let request_headers = vec![
+        HttpHeader {
+            name: "Host".to_string(),
+            value: host_header,
+        },
+        HttpHeader {
+            name: "User-Agent".to_string(),
+            value: "oracle_canister".to_string(),
+        },
+    ];
+
+    let request = CanisterHttpRequestArgument {
         url: url.clone(),
-        http_method,
+        method,
         body,
         max_response_bytes: Some(MAX_RESPONSE_BYTES),
-        transform_method_name: Some("transform".to_string()),
-        headers,
+        transform: Some(TransformContext::new(transform, vec![])),
+        headers: request_headers,
     };
-
-    let body = candid::utils::encode_one(&request).unwrap();
 
     ic_cdk::api::print(format!("Requesting url: {}", url.to_string()));
 
-    ic_cdk::api::call::call_raw(
-        Principal::management_canister(),
-        "http_request",
-        &body[..],
-        2_000_000_000,
-    ).await
+    match http_request(request).await {
+        Ok((response, )) => {
+            ic_cdk::api::print(format!("Response status: {}", response.status));
+
+            let decoded_body = String::from_utf8(response.body)
+                .expect("Remote service response is not UTF-8 encoded.");
+
+            ic_cdk::api::print(format!("Response body: {}", decoded_body));
+
+            Ok(decoded_body)
+        },
+        Err((code, message)) => {
+            ic_cdk::api::print(format!("Error: {}", message));
+            Err((code, message))
+        }
+    }
 }
 
 #[update]
-async fn fetch_price() -> String {
-    let host = "api.pro.coinbase.com";
-    let mut host_header = host.clone().to_owned();
-    host_header.push_str(":443");
+pub async fn fetch_price() -> Result<String, String> {
+    let host = "api.pro.coinbase.com".to_string();
 
     let url = format!("https://{host}/products/ICP-USD/stats");
     ic_cdk::api::print(url.clone());
 
-    // prepare system http_request call
-    let request_headers = vec![
-        HttpHeader {
-            name: "Host".to_string(),
-            value: host_header,
-        },
-        HttpHeader {
-            name: "User-Agent".to_string(),
-            value: "exchange_rate_canister".to_string(),
-        },
-    ];
+    match send_request(host, url, HttpMethod::GET, None).await {
+        Ok(response) => {
+            ic_cdk::api::print(format!("Response from fetch_price: {}", response));
 
-    match send_request(url, HttpMethod::GET, request_headers, None).await {
-        Ok(result) => {
-            let decoded_result: CanisterHttpResponsePayload =
-                candid::utils::decode_one(&result).expect("IC http_request failed!");
+            let response_obj: Value = serde_json::from_str(&response).unwrap();
 
-            let decoded_body = String::from_utf8(decoded_result.body)
-                .expect("Remote service response is not UTF-8 encoded.");
+            ic_cdk::api::print(format!("Price: {}", response_obj["last"]));
 
-            ic_cdk::api::print(decoded_body.clone());
-            ic_cdk::api::print("Got response from remote service.");
-
-            let response: Value = serde_json::from_str(&decoded_body).unwrap();
-
-            ic_cdk::api::print(format!("{}", response["last"]));
-
-            response["last"].to_string()
+            Ok(response_obj["last"].to_string())
         }
-        Err((r, m)) => {
-            let message =
-                format!("The http_request resulted into error. RejectionCode: {r:?}, Error: {m}");
-            ic_cdk::api::print(message.clone());
+        Err((code, message)) => {
+            let f_message =
+                format!("The http_request resulted into error. RejectionCode: {code:?}, Error: {message}");
+            ic_cdk::api::print(f_message.clone());
 
-            "0".to_string()
+            Err(message)
         }
     }
 }
 
-#[update]
-async fn send_transaction(body: Option<Vec<u8>>) -> () {
-    let host = "alchemy...";
-    let mut host_header = host.clone().to_owned();
-    host_header.push_str(":443");
+// #[update]
+// async fn send_transaction(body: Option<Vec<u8>>) -> () {
+//     let host = "alchemy...";
+//     let mut host_header = host.clone().to_owned();
+//     host_header.push_str(":443");
+//
+//     let url = format!("https://{host}/yoyo...");
+//     ic_cdk::api::print(url.clone());
+//
+//     // prepare system http_request call
+//     let request_headers = vec![
+//         HttpHeader {
+//             name: "Host".to_string(),
+//             value: host_header,
+//         },
+//         HttpHeader {
+//             name: "User-Agent".to_string(),
+//             value: "exchange_rate_canister".to_string(),
+//         },
+//     ];
+//
+//     match send_request(url, HttpMethod::POST, request_headers, body).await {
+//         Ok(result) => {
+//             ic_cdk::api::print(result.clone());
+//             ic_cdk::api::print("Got response from remote service.");
+//
+//             // let response: Value = serde_json::from_str(&decoded_body).unwrap();
+//
+//             // ic_cdk::api::print(format!("{}", response["last"]));
+//
+//             // response["last"].to_string()
+//         }
+//         Err((r, m)) => {
+//             let message =
+//                 format!("The http_request resulted into error. RejectionCode: {r:?}, Error: {m}");
+//             ic_cdk::api::print(message.clone());
+//         }
+//     }
+// }
 
-    let url = format!("https://{host}/yoyo...");
-    ic_cdk::api::print(url.clone());
-
-    // prepare system http_request call
-    let request_headers = vec![
+#[query]
+fn transform(raw: TransformArgs) -> HttpResponse {
+    let mut sanitized = raw.response.clone();
+    sanitized.headers = vec![
         HttpHeader {
-            name: "Host".to_string(),
-            value: host_header,
+            name: "Content-Security-Policy".to_string(),
+            value: "default-src 'self'".to_string(),
         },
         HttpHeader {
-            name: "User-Agent".to_string(),
-            value: "exchange_rate_canister".to_string(),
+            name: "Referrer-Policy".to_string(),
+            value: "strict-origin".to_string(),
+        },
+        HttpHeader {
+            name: "Permissions-Policy".to_string(),
+            value: "geolocation=(self)".to_string(),
+        },
+        HttpHeader {
+            name: "Strict-Transport-Security".to_string(),
+            value: "max-age=63072000".to_string(),
+        },
+        HttpHeader {
+            name: "X-Frame-Options".to_string(),
+            value: "DENY".to_string(),
+        },
+        HttpHeader {
+            name: "X-Content-Type-Options".to_string(),
+            value: "nosniff".to_string(),
         },
     ];
-
-    match send_request(url, HttpMethod::POST, request_headers, body).await {
-        Ok(result) => {
-            let decoded_result: CanisterHttpResponsePayload =
-                candid::utils::decode_one(&result).expect("IC http_request failed!");
-
-            let decoded_body = String::from_utf8(decoded_result.body)
-                .expect("Remote service response is not UTF-8 encoded.");
-
-            ic_cdk::api::print(decoded_body.clone());
-            ic_cdk::api::print("Got response from remote service.");
-
-            // let response: Value = serde_json::from_str(&decoded_body).unwrap();
-
-            // ic_cdk::api::print(format!("{}", response["last"]));
-
-            // response["last"].to_string()
-        }
-        Err((r, m)) => {
-            let message =
-                format!("The http_request resulted into error. RejectionCode: {r:?}, Error: {m}");
-            ic_cdk::api::print(message.clone());
-        }
-    }
+    sanitized
 }
 
 fn main() {}
