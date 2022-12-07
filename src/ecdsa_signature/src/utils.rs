@@ -22,20 +22,45 @@ pub fn get_address_from_public_key(public_key: Vec<u8>) -> Result<String, String
     Ok(address)
 }
 
-pub fn get_transfer_data(address: &str, value: u64) -> Result<String, String> {
-    if address.len() != 42 {
-        return Err("Invalid address".to_string());
-    }
-    let method_sig = "transfer(address,uint256)";
+// pub fn get_transfer_data(address: &str, value: u64) -> Result<String, String> {
+//     if address.len() != 42 {
+//         return Err("Invalid address".to_string());
+//     }
+//     let method_sig = "transfer(address,uint256)";
+//     let keccak256 = easy_hasher::raw_keccak256(method_sig.as_bytes().to_vec());
+//     let method_id = &keccak256.to_hex_string()[..8];
+//
+//     let address_64 = format!("{:0>64}", &address[2..]);
+//
+//     let value_hex = format!("{:02x}", value);
+//     let value_64 = format!("{:0>64}", value_hex);
+//
+//     Ok(method_id.to_owned() + &address_64 + &value_64)
+// }
+
+pub fn get_change_price_data(price: &str) -> Result<String, String> {
+    let method_sig = "set_price(string)";
+    // let method_sig = "transfer(address,uint256)";
+
     let keccak256 = easy_hasher::raw_keccak256(method_sig.as_bytes().to_vec());
     let method_id = &keccak256.to_hex_string()[..8];
 
-    let address_64 = format!("{:0>64}", &address[2..]);
+    let price_keccak256 = easy_hasher::raw_keccak256(price.as_bytes().to_vec());
+    let price_64 = format!("{:0>64}", &price_keccak256.to_hex_string());
+    // let price_64 = format!("{:0>64}", &price_keccak256.to_hex_string()[2..]);
+    // let price_64 = price_keccak256.to_hex_string();
 
-    let value_hex = format!("{:02x}", value);
-    let value_64 = format!("{:0>64}", value_hex);
+    // let address_64 = format!("{:0>64}", &address[2..]);
 
-    Ok(method_id.to_owned() + &address_64 + &value_64)
+    // let value_hex = format!("{:02x}", value);
+    // let value_64 = format!("{:0>64}", value_hex);
+
+    // let price_hex = format!("{:02x}", price);
+    // let price_64 = format!("{:0>64}", price.encode_hex());
+
+    // let price_64 = format!("{:0>64}", &price[2..]);
+
+    Ok(method_id.to_owned() + &price_64)
 }
 
 pub fn string_to_vec_u8(str: &str) -> Vec<u8> {

@@ -1,0 +1,4 @@
+service : {
+    create : (text) -> (variant { Ok: record { address: text; }; Err: text });
+    get_anon_address: () -> (text);
+}

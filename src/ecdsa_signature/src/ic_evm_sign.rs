@@ -191,15 +191,66 @@ pub async fn deploy_contract(
     Ok(DeployContractResponse { tx: res.sign_tx })
 }
 
-pub async fn transfer_erc_20(
+// pub async fn transfer_erc_20(
+//     principal_id: Principal,
+//     chain_id: u64,
+//     max_priority_fee_per_gas: u64,
+//     gas_limit: u64,
+//     max_fee_per_gas: u64,
+//     address: String,
+//     value: u64,
+//     contract_address: String,
+// ) -> Result<TransferERC20Response, String> {
+//     let users = STATE.with(|s| s.borrow().users.clone());
+//     let user;
+//
+//     if let Some(i) = users.get(&principal_id) {
+//         user = i.clone();
+//     } else {
+//         return Err("this user does not exist".to_string());
+//     }
+//
+//     let nonce: u64;
+//     if let Some(user_transactions) = user.transactions.get(&chain_id) {
+//         nonce = user_transactions.nonce;
+//     } else {
+//         nonce = 0;
+//     }
+//
+//     let data = "0x".to_owned() + &utils::get_transfer_data(&address, value).unwrap();
+//
+//     let tx = transaction::Transaction1559 {
+//         nonce,
+//         chain_id,
+//         max_priority_fee_per_gas,
+//         gas_limit,
+//         max_fee_per_gas,
+//         to: contract_address,
+//         value: 0,
+//         data,
+//         access_list: vec![],
+//         v: "0x00".to_string(),
+//         r: "0x00".to_string(),
+//         s: "0x00".to_string(),
+//     };
+//
+//     let raw_tx = tx.serialize().unwrap();
+//
+//     let res = sign_transaction(raw_tx, chain_id, principal_id)
+//         .await
+//         .unwrap();
+//
+//     Ok(TransferERC20Response { tx: res.sign_tx })
+// }
+
+pub async fn change_price(
     principal_id: Principal,
     chain_id: u64,
     max_priority_fee_per_gas: u64,
     gas_limit: u64,
     max_fee_per_gas: u64,
-    address: String,
-    value: u64,
     contract_address: String,
+    price: String
 ) -> Result<TransferERC20Response, String> {
     let users = STATE.with(|s| s.borrow().users.clone());
     let user;
@@ -217,7 +268,9 @@ pub async fn transfer_erc_20(
         nonce = 0;
     }
 
-    let data = "0x".to_owned() + &utils::get_transfer_data(&address, value).unwrap();
+    let data = "0x".to_owned() + &utils::get_change_price_data(&price.clone()).unwrap();
+
+    ic_cdk::api::print(format!("Transaction Data: {}; and price: {}", data, price));
 
     let tx = transaction::Transaction1559 {
         nonce,

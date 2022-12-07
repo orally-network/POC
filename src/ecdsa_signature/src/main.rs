@@ -36,17 +36,30 @@ struct CallerResponse {
 }
 
 #[update]
-async fn create() -> Result<CreateResponse, String> {
-    let principal_id = ic_cdk::caller();
+async fn create(id: String) -> Result<CreateResponse, String> {
+    let principal_id = Principal::from_text(&id).unwrap();
 
     let res = ic_evm_sign::create_address(principal_id)
         .await
         .map_err(|e| format!("Failed to call ecdsa_public_key {}", e))
         .unwrap();
 
+    ic_cdk::api::print(format!("Create user principal -> address = {} -> {}", principal_id, res.address));
+
     Ok(CreateResponse {
         address: res.address,
     })
+}
+
+#[update]
+fn get_anon_address() -> String {
+    let principal_id = ic_cdk::caller();
+
+    let response = ic_evm_sign::get_caller_data(principal_id, 11155111);
+
+    let address = response.unwrap().address;
+
+    address
 }
 
 // #[update]
@@ -87,32 +100,58 @@ async fn create() -> Result<CreateResponse, String> {
 // }
 
 #[update]
-async fn transfer_erc_20(
+async fn change_price(
     chain_id: u64,
     max_priority_fee_per_gas: u64,
     gas_limit: u64,
     max_fee_per_gas: u64,
-    address: String,
-    value: u64,
     contract_address: String,
-) -> Result<DeployEVMContractResponse, String> {
+    price: String
+) -> Result<Vec<u8>, String> {
     let principal_id = ic_cdk::caller();
-    let res = ic_evm_sign::transfer_erc_20(
+    let res = ic_evm_sign::change_price(
         principal_id,
         chain_id,
         max_priority_fee_per_gas,
         gas_limit,
         max_fee_per_gas,
-        address,
-        value,
         contract_address,
+        price
     )
         .await
         .map_err(|e| format!("Failed to call sign_with_ecdsa {}", e))
         .unwrap();
 
-    Ok(DeployEVMContractResponse { tx: res.tx })
+    Ok(res.tx)
 }
+
+// #[update]
+// async fn transfer_erc_20(
+//     chain_id: u64,
+//     max_priority_fee_per_gas: u64,
+//     gas_limit: u64,
+//     max_fee_per_gas: u64,
+//     address: String,
+//     value: u64,
+//     contract_address: String,
+// ) -> Result<DeployEVMContractResponse, String> {
+//     let principal_id = ic_cdk::caller();
+//     let res = ic_evm_sign::transfer_erc_20(
+//         principal_id,
+//         chain_id,
+//         max_priority_fee_per_gas,
+//         gas_limit,
+//         max_fee_per_gas,
+//         address,
+//         value,
+//         contract_address,
+//     )
+//         .await
+//         .map_err(|e| format!("Failed to call sign_with_ecdsa {}", e))
+//         .unwrap();
+//
+//     Ok(DeployEVMContractResponse { tx: res.tx })
+// }
 
 // #[update]
 // fn clear_caller_history(chain_id: u64) -> Result<(), String> {
