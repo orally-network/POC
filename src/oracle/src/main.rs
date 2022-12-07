@@ -1,19 +1,18 @@
 use ic_cdk::api::call::CallResult;
 use ic_cdk_macros::{self, query, update};
+use ic_cdk::export::{Principal};
 use candid::utils::{ArgumentDecoder, ArgumentEncoder};
 
 #[update]
 async fn make_magic() -> () {
-    // let result = ic_cdk::api::call::call_raw(
-    //     "ryjl3-tyaaa-aaaaa-aaaba-cai".to_string().parse().unwrap(),
-    //     "fetch_price",
-    //     &[][..],
-    //     2_000_000_000,
-    // ).await;
+    let call_result: Result<(Result<String, String>,), _> =
+        ic_cdk::api::call::call(
+            Principal::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap(),
+            "fetch_price",
+            ()
+        ).await;
 
-    let result = ic_cdk::api::call::call("ryjl3-tyaaa-aaaaa-aaaba-cai".parse().unwrap(), "fetch_price", ()).await;
-
-    let price: String = candid::utils::decode_one(&result.unwrap()).expect("fetch_price failed!");
+    let price = call_result.unwrap().0.unwrap();
 
     ic_cdk::api::print(format!("Price from oracle: {}", price));
 }
