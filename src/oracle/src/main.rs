@@ -26,10 +26,21 @@ async fn make_magic() -> () {
 
     let tx = call_result.unwrap().0.unwrap();
 
-    let decoded_tx = String::from_utf8(tx)
-        .expect("Remote service response is not UTF-8 encoded.");
+    // let decoded_tx = String::from_utf8(tx)
+    //     .expect("Remote service response is not UTF-8 encoded.");
 
-    ic_cdk::api::print(format!("Signed tx: {}", decoded_tx));
+    // ic_cdk::api::print(format!("Signed tx: {}", decoded_tx));
+
+    let call_result: Result<(Result<String, String>,), _> =
+        ic_cdk::api::call::call(
+            Principal::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap(),
+            "send_transaction",
+            ("".to_string(), tx)
+        ).await;
+
+    let msg = call_result.unwrap().0.unwrap();
+
+    ic_cdk::api::print(format!("Msg from oracle after transaction: {}", msg));
 }
 
 fn main() {}

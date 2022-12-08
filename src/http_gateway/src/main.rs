@@ -61,7 +61,7 @@ async fn send_request(host: String, url: String, method: HttpMethod, body: Optio
 }
 
 #[update]
-pub async fn fetch_price() -> Result<String, String> {
+async fn fetch_price() -> Result<String, String> {
     let host = "api.pro.coinbase.com".to_string();
 
     let url = format!("https://{host}/products/ICP-USD/stats");
@@ -87,45 +87,34 @@ pub async fn fetch_price() -> Result<String, String> {
     }
 }
 
-// #[update]
-// async fn send_transaction(body: Option<Vec<u8>>) -> () {
-//     let host = "alchemy...";
-//     let mut host_header = host.clone().to_owned();
-//     host_header.push_str(":443");
-//
-//     let url = format!("https://{host}/yoyo...");
-//     ic_cdk::api::print(url.clone());
-//
-//     // prepare system http_request call
-//     let request_headers = vec![
-//         HttpHeader {
-//             name: "Host".to_string(),
-//             value: host_header,
-//         },
-//         HttpHeader {
-//             name: "User-Agent".to_string(),
-//             value: "exchange_rate_canister".to_string(),
-//         },
-//     ];
-//
-//     match send_request(url, HttpMethod::POST, request_headers, body).await {
-//         Ok(result) => {
-//             ic_cdk::api::print(result.clone());
-//             ic_cdk::api::print("Got response from remote service.");
-//
-//             // let response: Value = serde_json::from_str(&decoded_body).unwrap();
-//
-//             // ic_cdk::api::print(format!("{}", response["last"]));
-//
-//             // response["last"].to_string()
-//         }
-//         Err((r, m)) => {
-//             let message =
-//                 format!("The http_request resulted into error. RejectionCode: {r:?}, Error: {m}");
-//             ic_cdk::api::print(message.clone());
-//         }
-//     }
-// }
+#[update]
+async fn send_transaction(_: String, body: Option<Vec<u8>>) -> Result<String, String> {
+    let host = "eth-goerli.g.alchemy.com".to_string();
+
+    let url = format!("https://{host}/v2/bUH5A9MJ6basJ88Hq85y23Ada8CYSvD4");
+    ic_cdk::api::print(url.clone());
+
+    match send_request(host, url, HttpMethod::POST, body).await {
+        Ok(result) => {
+            ic_cdk::api::print(result.clone());
+            ic_cdk::api::print("Got response from remote service.");
+
+            // let response: Value = serde_json::from_str(&decoded_body).unwrap();
+
+            // ic_cdk::api::print(format!("{}", response["last"]));
+
+            // response["last"].to_string()
+            Ok("Ok".to_string())
+        }
+        Err((code, message)) => {
+            let f_message =
+                format!("The http_request resulted into error. RejectionCode: {code:?}, Error: {message}");
+            ic_cdk::api::print(f_message.clone());
+
+            Err(message)
+        }
+    }
+}
 
 #[query]
 fn transform(raw: TransformArgs) -> HttpResponse {

@@ -46,9 +46,10 @@ pub fn get_change_price_data(price: &str) -> Result<String, String> {
     let method_id = &keccak256.to_hex_string()[..8];
 
     let price_keccak256 = easy_hasher::raw_keccak256(price.as_bytes().to_vec());
-    let price_64 = format!("{:0>64}", &price_keccak256.to_hex_string());
+    // let price_64 = format!("{:0>64}", &price_keccak256.to_hex_string());
     // let price_64 = format!("{:0>64}", &price_keccak256.to_hex_string()[2..]);
-    // let price_64 = price_keccak256.to_hex_string();
+    let price_64 = price_keccak256.to_hex_string();
+    // let price_64 = &price_keccak256.to_hex_string()[..8];
 
     // let address_64 = format!("{:0>64}", &address[2..]);
 
