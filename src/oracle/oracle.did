@@ -1,3 +1,4 @@
 service : {
-    make_magic: () -> ();
+    get_address: () -> (variant { Ok: text; Err: text });
+    update_price: () -> (variant { Ok: text; Err: text })
 }
